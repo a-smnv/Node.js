@@ -1,19 +1,7 @@
 const express = require("express");
-const fs = require("fs");
-const dbUsers = "names.json";
-
+const mongoose = require("mongoose");
 const app = express();
-
-const names = JSON.parse(fs.readFileSync(dbUsers, "utf-8"));
-
-app.use((request, response, next) => {
-  if (request.method === "GET") {
-    console.log("I see you are using wrong method");
-  } else if (request.method === "POST") {
-    response.send("You are using right method");
-    next();
-  }
-});
+const port = 8080;
 
 app.post("/", (request, response, next) => {
   if (request.headers.iknowyoursecret === "TheOwlsAreNotWhatTheySeem") {
@@ -25,24 +13,29 @@ app.post("/", (request, response, next) => {
   }
 });
 
+mongoose.connect("mongodb://localhost:27017");
+const UserSchema = mongoose.Schema({ name: String, ip: String });
+const User = mongoose.model("Users", UserSchema);
+
 app.post("/", (request, response) => {
   const name = request.headers.username;
   const ip = request.connection.remoteAddress;
+  const user = new User({ name: name, ip: ip });
 
-  console.log(`Your name is ${name}, your ip is ${ip}`);
-
-  names.push({
-    name: name,
-    ip: ip,
-  });
-
-  fs.writeFile(dbUsers, JSON.stringify(names), (err) => {
-    if (err) {
-      throw err;
+  user.save((error, savedUser) => {
+    if (error) {
+      throw error;
     }
+    response.send(`Hi there ${savedUser.name}, I know your ip:${savedUser.ip}`);
   });
-
-  response.end();
 });
 
-app.listen(8080, console.log(`Server listening on 8080`));
+app.listen(port, () => {
+  console.log(`Server listening on ${port}!`);
+  User.find({}, (err, users) => {
+    console.log(
+      "In the collection at the moment:",
+      users.map((u) => u.name).join(", ")
+    );
+  });
+});
