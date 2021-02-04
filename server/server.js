@@ -10,16 +10,6 @@ const app = express();
 const port = 8080;
 const secret = "TheOwlsAreNotWhatTheySeem";
 
-// app.post("/", (request, response, next) => {
-//   if (request.headers.iknowyoursecret === "TheOwlsAreNotWhatTheySeem") {
-//     console.log("This is the right secret");
-//     next();
-//   } else {
-//     console.log("You have to know my secret");
-//     response.end();
-//   }
-// });
-
 mongoose.connect("mongodb://localhost:27017/users", { useNewUrlParser: true });
 const UserSchema = mongoose.Schema(
   {
@@ -46,7 +36,7 @@ const localStrategy = new LocalStrategy(
           console.log("success", foundUser);
         } else {
           console.log("invalid password");
-          done("invalid password");
+          done(null, "invalid password");
         }
       });
   }
@@ -58,10 +48,10 @@ const bearerStrategy = new BearerStrategy((token, done) => {
     .then((foundUser) => {
       if (!foundUser) {
         console.log("invalid jwt");
-        done(null, false);
+        return done(null, false);
       }
       console.log("bearer found: ", foundUser);
-      done(null, foundUser);
+      return done(null, foundUser);
     });
 });
 passport.use("local", localStrategy);
@@ -105,20 +95,6 @@ app.get(
     response.end();
   }
 );
-
-// app.post("/", (request, response) => {
-//   const name = request.headers.username;
-//   const ip = request.connection.remoteAddress;
-
-//   const user = new User({ name: name, ip: ip });
-
-//   user.save((error, savedUser) => {
-//     if (error) {
-//       throw error;
-//     }
-//     response.send(`Hi there ${savedUser.name}, I know your ip:${savedUser.ip}`);
-//   });
-// });
 
 app.listen(port, () => {
   console.log(`Server listening on ${port}!`);
